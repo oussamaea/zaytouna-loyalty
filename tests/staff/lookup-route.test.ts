@@ -45,17 +45,25 @@ function createQuery(result: { data: unknown; error?: unknown }) {
 
 function createAdmin(options: {
   profileData?: unknown;
+  profileError?: unknown;
   accountData?: unknown;
+  accountError?: unknown;
   qrData?: unknown;
+  qrError?: unknown;
   updateSpy?: ReturnType<typeof vi.fn>;
 }) {
   const profileQuery = createQuery({
     data: "profileData" in options ? options.profileData : profile,
+    error: options.profileError,
   });
   const accountQuery = createQuery({
     data: "accountData" in options ? options.accountData : account,
+    error: options.accountError,
   });
-  const qrQuery = createQuery({ data: options.qrData });
+  const qrQuery = createQuery({
+    data: options.qrData,
+    error: options.qrError,
+  });
   const updateSpy = options.updateSpy ?? vi.fn();
 
   return {
@@ -99,6 +107,7 @@ describe("staff lookup route", () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
     vi.clearAllMocks();
     vi.resetModules();
@@ -207,6 +216,230 @@ describe("staff lookup route", () => {
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({
       error: "Staff authorization required.",
+    });
+  });
+
+  it("returns 401 when authentication is required", async () => {
+    mockGetStaffContext.mockResolvedValue({
+      error: Response.json({ error: "Authentication required." }, { status: 401 }),
+    });
+
+    const response = await callLookup("?memberCode=ZB-EDCF6B");
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: "Authentication required.",
+    });
+  });
+
+  it("returns development details for profile query failures", async () => {
+    const { admin } = createAdmin({
+      profileError: {
+        message: "column profiles.loyalty_member_code does not exist",
+        code: "42703",
+        details: "Missing column",
+        hint: "Check the select/query",
+        status: 400,
+      },
+    });
+    mockGetStaffContext.mockResolvedValue({
+      staff: { id: "staff-1", role: "staff" },
+      admin,
+    });
+
+    const response = await callLookup("?memberCode=ZB-EDCF6B");
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: "Unexpected lookup failure",
+      debug: {
+        step: "profile query",
+        normalizedMemberCode: "ZB-EDCF6B",
+        supabaseError: {
+          message: "column profiles.loyalty_member_code does not exist",
+          code: "42703",
+          details: "Missing column",
+          hint: "Check the select/query",
+          status: 400,
+        },
+      },
+    });
+  });
+
+  it("returns development details for loyalty account query failures", async () => {
+    const { admin } = createAdmin({
+      accountError: {
+        message: "permission denied for table loyalty_accounts",
+        code: "42501",
+        details: "RLS denied access",
+        hint: "Check service role configuration",
+        status: 403,
+      },
+    });
+    mockGetStaffContext.mockResolvedValue({
+      staff: { id: "staff-1", role: "staff" },
+      admin,
+    });
+
+    const response = await callLookup("?memberCode=ZB-EDCF6B");
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Unexpected lookup failure",
+      debug: {
+        step: "loyalty account query",
+        normalizedMemberCode: "ZB-EDCF6B",
+        supabaseError: {
+          message: "permission denied for table loyalty_accounts",
+          code: "42501",
+          details: "RLS denied access",
+          hint: "Check service role configuration",
+          status: 403,
+        },
+      },
+    });
+  });
+
+  it("returns development details for QR token query failures", async () => {
+    const { admin } = createAdmin({
+      qrError: {
+        message: "permission denied for table qr_tokens",
+        code: "42501",
+        details: "RLS denied access",
+        hint: "Check service role configuration",
+        status: 403,
+      },
+    });
+    mockGetStaffContext.mockResolvedValue({
+      staff: { id: "staff-1", role: "staff" },
+      admin,
+    });
+
+    const response = await callLookup("?qrPayload=raw-token");
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: "Unexpected lookup failure",
+      debug: {
+        step: "qr token query",
+        supabaseError: {
+          message: "permission denied for table qr_tokens",
+          code: "42501",
+          details: "RLS denied access",
+          hint: "Check service role configuration",
+          status: 403,
+        },
+      },
+    });
+  });
+
+  it("returns development details for QR profile query failures", async () => {
+    const { admin } = createAdmin({
+      qrData: {
+        customer_id: profile.id,
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+        used_at: null,
+        revoked_at: null,
+      },
+      profileError: {
+        message: "permission denied for table profiles",
+        code: "42501",
+        details: "RLS denied access",
+        hint: "Check service role configuration",
+        status: 403,
+      },
+    });
+    mockGetStaffContext.mockResolvedValue({
+      staff: { id: "staff-1", role: "staff" },
+      admin,
+    });
+
+    const response = await callLookup("?qrPayload=raw-token");
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: "Unexpected lookup failure",
+      debug: {
+        step: "qr profile query",
+        supabaseError: {
+          message: "permission denied for table profiles",
+          code: "42501",
+          details: "RLS denied access",
+          hint: "Check service role configuration",
+          status: 403,
+        },
+      },
+    });
+  });
+
+  it("returns development details for response mapping failures", async () => {
+    const { admin } = createAdmin({
+      accountData: {
+        customer_id: profile.id,
+        current_stamps: null,
+        cycle_number: 1,
+        fifth_reward_status: "locked",
+        tenth_reward_status: "locked",
+      },
+    });
+    mockGetStaffContext.mockResolvedValue({
+      staff: { id: "staff-1", role: "staff" },
+      admin,
+    });
+
+    const response = await callLookup("?memberCode=ZB-EDCF6B");
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Unexpected lookup failure",
+      debug: {
+        step: "response mapping",
+        normalizedMemberCode: "ZB-EDCF6B",
+      },
+    });
+  });
+
+  it("returns development details for unexpected lookup exceptions", async () => {
+    mockGetStaffContext.mockResolvedValue({
+      staff: { id: "staff-1", role: "staff" },
+      admin: {
+        from: vi.fn(() => {
+          throw new Error("Supabase client exploded");
+        }),
+      },
+    });
+
+    const response = await callLookup("?memberCode=ZB-EDCF6B");
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Unexpected lookup failure",
+      debug: {
+        step: "unexpected exception",
+        normalizedMemberCode: "ZB-EDCF6B",
+        message: "Supabase client exploded",
+      },
+    });
+  });
+
+  it("keeps lookup failures generic in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const { admin } = createAdmin({
+      profileError: {
+        message: "permission denied for table profiles",
+        code: "42501",
+      },
+    });
+    mockGetStaffContext.mockResolvedValue({
+      staff: { id: "staff-1", role: "staff" },
+      admin,
+    });
+
+    const response = await callLookup("?memberCode=ZB-EDCF6B");
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: "Unexpected lookup failure",
     });
   });
 
