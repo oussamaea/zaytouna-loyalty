@@ -13,7 +13,7 @@
 
 ## Email Template
 
-This app uses six-digit email OTP codes. The email must show the code only, not
+This app uses 8-digit email OTP codes. The email must show the code only, not
 a clickable magic link. That avoids email-client prefetching consuming a login
 token before the customer or staff member opens the message.
 
@@ -22,7 +22,7 @@ and replace the body with a code-focused template:
 
 ```html
 <h2>Sign in to Zaytouna Loyalty</h2>
-<p>Your six-digit sign-in code is:</p>
+<p>Your 8-digit sign-in code is:</p>
 <p style="font-size: 28px; font-weight: 700; letter-spacing: 0.25em;">
   {{ .Token }}
 </p>
@@ -101,5 +101,5 @@ database/session before calling the RPC functions.
   in PostgreSQL.
 - QR tokens store only HMAC hashes in the database.
 - Customers can read their own loyalty data but cannot write stamps or rewards.
-- Email authentication uses six-digit OTP codes displayed with `{{ .Token }}`.
+- Email authentication uses 8-digit OTP codes displayed with `{{ .Token }}`.
   Do not include clickable auth links in the email template.

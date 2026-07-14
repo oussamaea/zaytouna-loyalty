@@ -88,7 +88,7 @@ describe("email OTP verification route", () => {
 
     const response = await postVerify({
       email: "customer@example.com",
-      token: "123456",
+      token: "12345678",
       next: "/card",
     });
 
@@ -101,9 +101,37 @@ describe("email OTP verification route", () => {
     );
     expect(mockVerifyOtp).toHaveBeenCalledWith({
       email: "customer@example.com",
-      token: "123456",
+      token: "12345678",
       type: "email",
     });
+  });
+
+  it("rejects 6-digit codes before calling Supabase", async () => {
+    const response = await postVerify({
+      email: "customer@example.com",
+      token: "123456",
+      next: "/card",
+    });
+
+    await expect(response.json()).resolves.toEqual({
+      error: "Enter the 8-digit code from your email.",
+    });
+    expect(response.status).toBe(400);
+    expect(mockCreateSupabaseCallbackClient).not.toHaveBeenCalled();
+  });
+
+  it("rejects codes containing letters before calling Supabase", async () => {
+    const response = await postVerify({
+      email: "customer@example.com",
+      token: "1234abcd",
+      next: "/card",
+    });
+
+    await expect(response.json()).resolves.toEqual({
+      error: "Enter the 8-digit code from your email.",
+    });
+    expect(response.status).toBe(400);
+    expect(mockCreateSupabaseCallbackClient).not.toHaveBeenCalled();
   });
 
   it("valid staff code returns /staff/dashboard for staff profiles", async () => {
@@ -118,7 +146,7 @@ describe("email OTP verification route", () => {
 
     const response = await postVerify({
       email: "staff@example.com",
-      token: "123456",
+      token: "12345678",
       next: "/staff/dashboard",
     });
 
@@ -141,7 +169,7 @@ describe("email OTP verification route", () => {
 
     const response = await postVerify({
       email: "admin@example.com",
-      token: "123456",
+      token: "12345678",
       next: "/staff/dashboard",
     });
 
@@ -175,7 +203,7 @@ describe("email OTP verification route", () => {
 
     const response = await postVerify({
       email: "customer@example.com",
-      token: "123456",
+      token: "12345678",
       next: "/staff/dashboard",
     });
 
@@ -196,7 +224,7 @@ describe("email OTP verification route", () => {
 
     const response = await postVerify({
       email: "customer@example.com",
-      token: "123456",
+      token: "12345678",
       next: "/card",
     });
 
@@ -216,7 +244,7 @@ describe("email OTP verification route", () => {
 
     const response = await postVerify({
       email: "customer@example.com",
-      token: "000000",
+      token: "00000000",
       next: "/card",
     });
 

@@ -3,7 +3,7 @@
 ## Staff Authentication Flow
 
 1. Staff sign in with Supabase passwordless email.
-2. Supabase emails a six-digit OTP code using `{{ .Token }}`.
+2. Supabase emails an 8-digit OTP code using `{{ .Token }}`.
 3. The browser submits the code to `/api/auth/verify-code`.
 4. The verification route calls `supabase.auth.verifyOtp()` with the email,
    typed code, and `type: "email"`, then attaches every Supabase `Set-Cookie`

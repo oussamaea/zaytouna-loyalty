@@ -65,7 +65,7 @@ describe("AuthForm join mode", () => {
     fireEvent.submit(container.querySelector("form")!);
 
     expect(
-      await screen.findByText("Check your email for a six-digit code."),
+      await screen.findByText("Check your email for an 8-digit code."),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Verify code" })).toBeInTheDocument();
   });
@@ -90,15 +90,45 @@ describe("AuthForm join mode", () => {
     });
     fireEvent.submit(container.querySelector("form")!);
 
-    await screen.findByText("Check your email for a six-digit code.");
-    fireEvent.change(screen.getByLabelText(/six-digit verification code/i), {
-      target: { value: "000000" },
+    await screen.findByText("Check your email for an 8-digit code.");
+    fireEvent.change(screen.getByLabelText(/eight-digit verification code/i), {
+      target: { value: "00000000" },
     });
     fireEvent.submit(container.querySelector("form")!);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Token has expired or is invalid",
     );
+  });
+
+  it("normalizes pasted codes with spaces or hyphens before verification", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ ok: true }))
+      .mockResolvedValueOnce(
+        Response.json({ error: "Test stop after submit" }, { status: 400 }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { container } = render(<AuthForm mode="login" />);
+    fireEvent.change(screen.getByLabelText(/^email$/i), {
+      target: { value: "layla@example.com" },
+    });
+    fireEvent.submit(container.querySelector("form")!);
+
+    await screen.findByText("Check your email for an 8-digit code.");
+    const otpInput = screen.getByLabelText(/eight-digit verification code/i);
+    fireEvent.paste(otpInput, {
+      clipboardData: { getData: () => "12 34-5678 99" },
+    });
+
+    expect(otpInput).toHaveValue("12345678");
+    fireEvent.submit(container.querySelector("form")!);
+
+    await screen.findByRole("alert");
+    expect(JSON.parse(fetchMock.mock.calls[1]?.[1]?.body as string)).toMatchObject({
+      token: "12345678",
+    });
   });
 
   it("keeps resend-code disabled during the cooldown", async () => {

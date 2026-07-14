@@ -24,10 +24,15 @@ function readableClientError(error: unknown) {
     : "Something went wrong.";
 }
 
+function normalizeOtpInput(value: string) {
+  return value.replace(/\D/g, "").slice(0, 8);
+}
+
 export function AuthForm({ mode }: { mode: Mode }) {
   const [step, setStep] = useState<"email" | "code">("email");
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [otpCode, setOtpCode] = useState("");
   const [pendingRequest, setPendingRequest] = useState<PendingRequest | null>(
     null,
   );
@@ -76,8 +81,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
     setResendCooldown(RESEND_COOLDOWN_SECONDS);
     setStatus(
       isResend
-        ? "A new six-digit code was sent."
-        : "Check your email for a six-digit code.",
+        ? "A new 8-digit code was sent."
+        : "Check your email for an 8-digit code.",
     );
   }
 
@@ -102,7 +107,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     await sendCode({ endpoint, body, email, next });
   }
 
-  async function submitCode(formData: FormData) {
+  async function submitCode() {
     if (!pendingRequest) {
       setError("Please request a code first.");
       return;
@@ -117,7 +122,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: pendingRequest.email,
-          token: String(formData.get("otpCode") ?? "").trim(),
+          token: otpCode,
           next: pendingRequest.next,
         }),
       });
@@ -165,19 +170,30 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <p>{pendingRequest.email}</p>
         </div>
         <label className="block text-sm font-bold">
-          Six-digit code
+          Enter the 8-digit code
           <span className="mt-1 flex items-center gap-2 rounded-sm border border-[#9ca57b] bg-white px-3 py-3">
             <KeyRound aria-hidden className="size-4 text-[#4c5a2d]" />
             <input
               name="otpCode"
               type="text"
               inputMode="numeric"
-              pattern="[0-9]{6}"
-              maxLength={6}
+              pattern="[0-9]{8}"
+              maxLength={8}
               required
+              value={otpCode}
+              onChange={(event) =>
+                setOtpCode(normalizeOtpInput(event.currentTarget.value))
+              }
+              onPaste={(event) => {
+                event.preventDefault();
+                setOtpCode(
+                  normalizeOtpInput(event.clipboardData.getData("text")),
+                );
+              }}
+              placeholder="12345678"
               className="w-full bg-transparent tracking-[0.35em]"
               autoComplete="one-time-code"
-              aria-label="Six-digit verification code"
+              aria-label="Eight-digit verification code"
             />
           </span>
         </label>
@@ -203,6 +219,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             setStep("email");
             setStatus("");
             setError("");
+            setOtpCode("");
           }}
           className="text-sm font-bold underline"
         >

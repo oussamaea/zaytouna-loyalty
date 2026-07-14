@@ -13,7 +13,7 @@ export default function LoginPage() {
           </p>
           <h1 className="mt-3 font-display text-5xl">Open your loyalty card</h1>
           <p className="mt-4 leading-7 text-[#3c4729]">
-            Enter your email and we will send a six-digit sign-in code.
+            Enter your email and we will send an 8-digit sign-in code.
             Customers cannot add stamps or redeem rewards from this card.
           </p>
           <p className="mt-4 text-sm">

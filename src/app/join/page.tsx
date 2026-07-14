@@ -16,7 +16,7 @@ export default function JoinPage() {
           </h1>
           <p className="mt-4 leading-7 text-[#3c4729]">
             We collect only what is needed to run the loyalty program. Your
-            six-digit verification code will arrive by email.
+            8-digit verification code will arrive by email.
           </p>
           <p className="mt-4 text-sm">
             Already joined?{" "}

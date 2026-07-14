@@ -7,14 +7,14 @@
    private keys as encrypted server environment variables only.
    `SUPABASE_SERVICE_ROLE_KEY` must never be prefixed with `NEXT_PUBLIC_`.
 5. Set the Supabase Auth site URL to the deployed app URL.
-6. Update the Supabase Magic Link email template to show the six-digit
+6. Update the Supabase Magic Link email template to show the 8-digit
    `{{ .Token }}` code, as shown in `docs/supabase-setup.md`.
 7. Run `npm run build` before deploy or let Vercel run it.
 8. Do not deploy from the public Zaytouna website repository.
 
 ## Production Checks
 
-- Confirm `/join` sends a six-digit email code.
+- Confirm `/join` sends an 8-digit email code.
 - Confirm the email contains `{{ .Token }}` output and no clickable auth link.
 - Confirm `/card` requires login and displays a QR code.
 - Confirm `/staff/dashboard` rejects non-staff users.

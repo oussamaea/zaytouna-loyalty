@@ -18,7 +18,7 @@ type CookieToSet = {
 
 const schema = z.object({
   email: z.email(),
-  token: z.string().trim().regex(/^\d{6}$/),
+  token: z.string().trim().regex(/^\d{8}$/),
   next: z.string().default("/card"),
 });
 
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Enter the six-digit code from your email." },
+        { error: "Enter the 8-digit code from your email." },
         { status: 400 },
       );
     }

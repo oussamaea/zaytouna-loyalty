@@ -48,7 +48,7 @@ npm run build
 ## Authentication Architecture
 
 Customers and staff sign in with Supabase passwordless email OTP. The email
-template must show the six-digit `{{ .Token }}` code and must not include a
+template must show the 8-digit `{{ .Token }}` code and must not include a
 clickable magic link. The browser submits the typed code to
 `/api/auth/verify-code`, which verifies it with Supabase and attaches Supabase
 session cookies to the response before sending customers to `/card` or staff to
@@ -74,7 +74,7 @@ Use a code-only email template for passwordless authentication:
 
 ```html
 <h2>Sign in to Zaytouna Loyalty</h2>
-<p>Your six-digit sign-in code is:</p>
+<p>Your 8-digit sign-in code is:</p>
 <p style="font-size: 28px; font-weight: 700; letter-spacing: 0.25em;">
   {{ .Token }}
 </p>

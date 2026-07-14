@@ -28,7 +28,7 @@ export default async function StaffLoginPage() {
           <p className="mt-4 leading-7 text-[#3c4729]">
             Staff accounts are created by an admin in Supabase. Public staff
             registration is disabled. Enter your staff email and verify the
-            six-digit code to open the scanner.
+            8-digit code to open the scanner.
           </p>
         </div>
         <div className="rounded-sm border border-[#cfc2ad] bg-[#fffaf2] p-5">
