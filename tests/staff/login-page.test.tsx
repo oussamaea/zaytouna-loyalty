@@ -10,6 +10,7 @@ const { mockRedirect, mockGetCurrentProfile } = vi.hoisted(() => ({
 
 vi.mock("next/navigation", () => ({
   redirect: mockRedirect,
+  useRouter: () => ({ replace: vi.fn() }),
 }));
 
 vi.mock("@/lib/env", () => ({
@@ -39,7 +40,8 @@ describe("/staff/login", () => {
     const html = await renderStaffLogin();
 
     expect(html).toContain("Protected staff login");
-    expect(html).toContain("Send code");
+    expect(html).toContain("Sign in with password");
+    expect(html).toContain("Send email code");
     expect(html).not.toContain("Staff Loyalty Dashboard");
   });
 

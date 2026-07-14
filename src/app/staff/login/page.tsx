@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { AuthForm } from "@/components/auth-form";
 import { BrandHeader } from "@/components/brand-header";
+import { StaffLoginOptions } from "@/components/staff-login-options";
 import { getCurrentProfile } from "@/lib/auth";
 import { hasSupabasePublicEnv } from "@/lib/env";
 
@@ -27,12 +27,12 @@ export default async function StaffLoginPage() {
           <h1 className="mt-3 font-display text-5xl">Protected staff login</h1>
           <p className="mt-4 leading-7 text-[#3c4729]">
             Staff accounts are created by an admin in Supabase. Public staff
-            registration is disabled. Enter your staff email and verify the
-            8-digit code to open the scanner.
+            registration is disabled. Use the temporary password option for
+            scanner testing, or request an email code.
           </p>
         </div>
         <div className="rounded-sm border border-[#cfc2ad] bg-[#fffaf2] p-5">
-          <AuthForm mode="staff" />
+          <StaffLoginOptions />
         </div>
       </section>
     </main>
