@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LockKeyhole, Mail } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { AuthForm } from "@/components/auth-form";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -31,8 +31,17 @@ export function StaffLoginOptions() {
   const [method, setMethod] = useState<LoginMethod>("password");
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const signingInRef = useRef(false);
 
   async function submitPassword(formData: FormData) {
+    if (signingInRef.current) {
+      return;
+    }
+
+    signingInRef.current = true;
+    setIsSigningIn(true);
     setError("");
     setStatus("Signing in...");
 
@@ -49,14 +58,26 @@ export function StaffLoginOptions() {
       if (signInError) {
         setStatus("");
         setError(readableAuthError(signInError));
+        signingInRef.current = false;
+        setIsSigningIn(false);
         return;
       }
 
-      const userId = data.user?.id;
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      const userId = user?.id ?? data.user?.id;
       if (!userId) {
         await supabase.auth.signOut();
         setStatus("");
-        setError("Unable to confirm this staff session. Please try again.");
+        setError(
+          userError
+            ? readableAuthError(userError)
+            : "Unable to confirm this staff session. Please try again.",
+        );
+        signingInRef.current = false;
+        setIsSigningIn(false);
         return;
       }
 
@@ -70,6 +91,8 @@ export function StaffLoginOptions() {
         await supabase.auth.signOut();
         setStatus("");
         setError(readableAuthError(profileError));
+        signingInRef.current = false;
+        setIsSigningIn(false);
         return;
       }
 
@@ -77,6 +100,8 @@ export function StaffLoginOptions() {
         await supabase.auth.signOut();
         setStatus("");
         setError("This account is not authorized for staff access.");
+        signingInRef.current = false;
+        setIsSigningIn(false);
         return;
       }
 
@@ -85,6 +110,8 @@ export function StaffLoginOptions() {
     } catch {
       setStatus("");
       setError("Network failure. Please check your connection and try again.");
+      signingInRef.current = false;
+      setIsSigningIn(false);
     }
   }
 
@@ -104,6 +131,7 @@ export function StaffLoginOptions() {
             setError("");
             setStatus("");
           }}
+          disabled={isSigningIn}
           className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-sm px-3 py-2 text-sm font-black focus-visible:outline-2 ${
             method === "password"
               ? "bg-[#24301f] text-white"
@@ -122,6 +150,7 @@ export function StaffLoginOptions() {
             setError("");
             setStatus("");
           }}
+          disabled={isSigningIn}
           className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-sm px-3 py-2 text-sm font-black focus-visible:outline-2 ${
             method === "code"
               ? "bg-[#24301f] text-white"
@@ -135,7 +164,10 @@ export function StaffLoginOptions() {
 
       {method === "password" ? (
         <form
-          action={submitPassword}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submitPassword(new FormData(event.currentTarget));
+          }}
           className="space-y-4"
           aria-describedby="staff-password-status"
         >
@@ -151,19 +183,35 @@ export function StaffLoginOptions() {
           </label>
           <label className="block text-sm font-bold">
             Password
-            <input
-              name="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              className="mt-1 w-full rounded-sm border border-[#9ca57b] bg-white px-3 py-3"
-            />
+            <span className="mt-1 flex items-center rounded-sm border border-[#9ca57b] bg-white">
+              <input
+                name="password"
+                type={showPassword ? "text" : "password"}
+                required
+                autoComplete="current-password"
+                className="w-full bg-transparent px-3 py-3"
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((current) => !current)}
+                className="inline-flex min-h-12 items-center justify-center px-3 text-[#24301f] hover:bg-[#ece2d3] focus-visible:outline-2"
+              >
+                {showPassword ? (
+                  <EyeOff aria-hidden className="size-4" />
+                ) : (
+                  <Eye aria-hidden className="size-4" />
+                )}
+              </button>
+            </span>
           </label>
           <button
             type="submit"
-            className="inline-flex min-h-12 w-full items-center justify-center rounded-sm bg-[#24301f] px-5 py-3 font-bold text-white hover:bg-[#4c5a2d] focus-visible:outline-2"
+            disabled={isSigningIn}
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-sm bg-[#24301f] px-5 py-3 font-bold text-white hover:bg-[#4c5a2d] disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline-2"
           >
-            Sign in with password
+            {isSigningIn ? "Signing in..." : "Sign in with password"}
           </button>
           <p
             id="staff-password-status"
