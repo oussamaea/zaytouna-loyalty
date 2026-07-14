@@ -21,11 +21,7 @@ export function hashQrToken(token: string) {
 }
 
 export function createQrPayload(token: string) {
-  return JSON.stringify({
-    v: 1,
-    t: token,
-    iss: "zaytouna-loyalty",
-  });
+  return token;
 }
 
 export function parseQrPayload(value: string) {

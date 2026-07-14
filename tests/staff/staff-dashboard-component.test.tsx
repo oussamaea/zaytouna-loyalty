@@ -8,21 +8,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { StaffDashboard } from "@/components/staff-dashboard";
 
 const customer = {
-  profile: {
-    id: "11111111-1111-4111-8111-111111111111",
-    first_name: "Layla",
-    loyalty_member_code: "ZB-ABC123",
-  },
-  account: {
-    customer_id: "11111111-1111-4111-8111-111111111111",
-    current_stamps: 6,
-    cycle_number: 1,
-    fifth_reward_status: "available",
-    tenth_reward_status: "locked",
-    version: 1,
-    updated_at: "2026-07-12T12:00:00.000Z",
-  },
-  transactions: [],
+  id: "11111111-1111-4111-8111-111111111111",
+  firstName: "Layla",
+  memberCode: "ZB-ABC123",
+  currentStamps: 6,
+  cycleNumber: 1,
+  fifthRewardStatus: "available",
+  tenthRewardStatus: "locked",
 };
 
 describe("StaffDashboard component", () => {

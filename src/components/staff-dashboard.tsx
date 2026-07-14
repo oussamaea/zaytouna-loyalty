@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Camera, LoaderCircle, Search, UserRound } from "lucide-react";
-import type { CustomerLoyaltyView } from "@/lib/types";
+import type { StaffLookupCustomer } from "@/lib/types";
 
 export function StaffDashboard() {
   const [memberCode, setMemberCode] = useState("");
   const [qrPayload, setQrPayload] = useState("");
-  const [customer, setCustomer] = useState<CustomerLoyaltyView | null>(null);
+  const [customer, setCustomer] = useState<StaffLookupCustomer | null>(null);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [scanning, setScanning] = useState(false);
@@ -26,7 +26,7 @@ export function StaffDashboard() {
 
     const response = await fetch(`/api/staff/lookup?${params.toString()}`);
     const data = (await response.json()) as {
-      customer?: CustomerLoyaltyView;
+      customer?: StaffLookupCustomer;
       error?: string;
     };
 
@@ -37,7 +37,7 @@ export function StaffDashboard() {
     }
 
     setCustomer(data.customer);
-    setStatus(`Loaded ${data.customer.profile.first_name}.`);
+    setStatus(`Loaded ${data.customer.firstName}.`);
   }
 
   async function startScanner() {
@@ -60,12 +60,12 @@ export function StaffDashboard() {
           const params = new URLSearchParams({ qrPayload: decodedText });
           const response = await fetch(`/api/staff/lookup?${params.toString()}`);
           const data = (await response.json()) as {
-            customer?: CustomerLoyaltyView;
+            customer?: StaffLookupCustomer;
             error?: string;
           };
           if (data.customer) {
             setCustomer(data.customer);
-            setStatus(`Loaded ${data.customer.profile.first_name}.`);
+            setStatus(`Loaded ${data.customer.firstName}.`);
           } else {
             setError(data.error ?? "QR code was not valid.");
           }
@@ -174,9 +174,7 @@ export function StaffDashboard() {
   );
 }
 
-function CustomerLookupResult({ customer }: { customer: CustomerLoyaltyView }) {
-  const { profile, account } = customer;
-
+function CustomerLookupResult({ customer }: { customer: StaffLookupCustomer }) {
   return (
     <div className="space-y-5">
       <div>
@@ -187,26 +185,26 @@ function CustomerLookupResult({ customer }: { customer: CustomerLoyaltyView }) {
       </div>
       <div className="rounded-sm border border-[#e1d6c6] bg-[#fffaf2] p-4">
         <p className="text-xs font-black uppercase tracking-[0.18em] text-[#59623d]">
-          {profile.loyalty_member_code}
+          {customer.memberCode}
         </p>
-        <h3 className="mt-1 font-display text-4xl">{profile.first_name}</h3>
+        <h3 className="mt-1 font-display text-4xl">{customer.firstName}</h3>
         <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
           <div>
             <dt className="font-black">Current stamps</dt>
-            <dd>{account.current_stamps} of 10</dd>
+            <dd>{customer.currentStamps} of 10</dd>
           </div>
           <div>
             <dt className="font-black">10% reward</dt>
-            <dd>{account.fifth_reward_status}</dd>
+            <dd>{customer.fifthRewardStatus}</dd>
           </div>
           <div>
             <dt className="font-black">50% reward</dt>
-            <dd>{account.tenth_reward_status}</dd>
+            <dd>{customer.tenthRewardStatus}</dd>
           </div>
         </dl>
       </div>
       <Link
-        href={`/staff/customer/${profile.id}`}
+        href={`/staff/customer/${customer.id}`}
         className="inline-flex min-h-12 w-full items-center justify-center rounded-sm bg-[#24301f] px-5 py-3 text-center font-bold text-white hover:bg-[#4c5a2d] focus-visible:outline-2"
       >
         Open customer loyalty details

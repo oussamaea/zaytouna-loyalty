@@ -43,3 +43,13 @@ export type CustomerLoyaltyView = {
   account: LoyaltyAccount;
   transactions: LoyaltyTransaction[];
 };
+
+export type StaffLookupCustomer = {
+  id: string;
+  firstName: string;
+  memberCode: string;
+  currentStamps: number;
+  cycleNumber: number;
+  fifthRewardStatus: RewardStatus;
+  tenthRewardStatus: RewardStatus;
+};

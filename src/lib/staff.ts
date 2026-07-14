@@ -37,7 +37,7 @@ export async function getStaffContext() {
   if (!profile || !["staff", "admin"].includes(profile.role)) {
     return {
       error: NextResponse.json(
-        { error: "Staff access required." },
+        { error: "Staff authorization required." },
         { status: 403 },
       ),
     };

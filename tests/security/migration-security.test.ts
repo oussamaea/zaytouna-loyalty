@@ -116,6 +116,21 @@ describe("qr token and idempotency protections", () => {
     expect(migration).not.toContain("token text");
   });
 
+  it("consumes QR tokens only inside add_stamp and rejects reuse", () => {
+    const addStampFunction = migration.slice(
+      migration.indexOf("create or replace function public.add_stamp"),
+      migration.indexOf("create or replace function public.redeem_fifth_reward"),
+    );
+
+    expect(addStampFunction).toContain("where token_hash = p_qr_token_hash");
+    expect(addStampFunction).toContain("for update");
+    expect(addStampFunction).toContain("set used_at = now()");
+    expect(addStampFunction).toContain("where id = v_qr_token_id and used_at is null");
+    expect(addStampFunction).toContain(
+      "QR token is invalid, expired, or already used.",
+    );
+  });
+
   it("limits qr creation to authenticated customers and short lifetimes", () => {
     expect(migration).toContain(
       "customers can create own short lived qr tokens",

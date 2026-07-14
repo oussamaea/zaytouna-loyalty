@@ -16,7 +16,10 @@ vi.mock("@/lib/qr", () => ({
 describe("staff mutation authorization", () => {
   it("blocks unauthorized add-stamp attempts before mutation RPC", async () => {
     mockGetStaffContext.mockResolvedValue({
-      error: Response.json({ error: "Staff access required." }, { status: 403 }),
+      error: Response.json(
+        { error: "Staff authorization required." },
+        { status: 403 },
+      ),
     });
     const { POST } = await import("@/app/api/staff/loyalty/add-stamp/route");
 
@@ -35,7 +38,7 @@ describe("staff mutation authorization", () => {
     const actualResponse = response as Response;
     expect(actualResponse.status).toBe(403);
     await expect(actualResponse.json()).resolves.toEqual({
-      error: "Staff access required.",
+      error: "Staff authorization required.",
     });
   });
 });
