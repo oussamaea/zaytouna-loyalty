@@ -336,6 +336,7 @@ grant select on public.loyalty_accounts to authenticated;
 grant select on public.loyalty_transactions to authenticated;
 grant select on public.wallet_passes to authenticated;
 grant insert (customer_id, token_hash, expires_at) on public.qr_tokens to authenticated;
+grant select on public.qr_tokens to authenticated;
 
 create policy "customers and staff can read profiles"
 on public.profiles for select
@@ -361,6 +362,13 @@ with check (
   and revoked_at is null
   and expires_at > now()
   and expires_at <= now() + interval '3 minutes'
+);
+
+create policy "staff can read qr tokens"
+on public.qr_tokens for select
+to authenticated
+using (
+  public.current_user_is_staff_or_admin()
 );
 
 create policy "customers and staff can read wallet passes"
