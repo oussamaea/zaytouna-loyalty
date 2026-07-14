@@ -337,6 +337,7 @@ grant select on public.loyalty_transactions to authenticated;
 grant select on public.wallet_passes to authenticated;
 grant insert (customer_id, token_hash, expires_at) on public.qr_tokens to authenticated;
 grant select on public.qr_tokens to authenticated;
+grant select on public.qr_tokens to service_role;
 
 create policy "customers and staff can read profiles"
 on public.profiles for select

@@ -131,6 +131,12 @@ describe("qr token and idempotency protections", () => {
     expect(migration).toContain("role in ('staff', 'admin')");
   });
 
+  it("grants service_role select access for server-side qr lookup", () => {
+    expect(migration).toContain(
+      "grant select on public.qr_tokens to service_role",
+    );
+  });
+
   it("prevents customers and anonymous users from selecting qr tokens", () => {
     const qrSelectPolicy = extractMigrationBlock(
       'create policy "staff can read qr tokens"',
@@ -140,7 +146,12 @@ describe("qr token and idempotency protections", () => {
     expect(migration).toContain(
       "revoke all on table public.qr_tokens from anon, authenticated",
     );
-    expect(migration).not.toMatch(/grant\s+select\s+on\s+public\.qr_tokens\s+to\s+anon/i);
+    expect(migration).not.toMatch(
+      /grant\s+select\s+on\s+public\.qr_tokens\s+to\s+anon/i,
+    );
+    expect(migration).not.toMatch(
+      /grant\s+select\s+on\s+public\.qr_tokens\s+to\s+public/i,
+    );
     expect(qrSelectPolicy).not.toContain("customer_id = auth.uid()");
     expect(qrSelectPolicy).not.toContain("id = auth.uid()");
   });
