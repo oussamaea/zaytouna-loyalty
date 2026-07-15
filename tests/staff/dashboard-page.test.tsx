@@ -52,9 +52,8 @@ function mockProfile(role: "customer" | "staff" | "admin" | null) {
 }
 
 async function renderStaffDashboard() {
-  const { default: StaffDashboardPage } = await import(
-    "@/app/staff/dashboard/page"
-  );
+  const { default: StaffDashboardPage } =
+    await import("@/app/staff/dashboard/page");
   const element = await StaffDashboardPage();
 
   return renderToStaticMarkup(element);

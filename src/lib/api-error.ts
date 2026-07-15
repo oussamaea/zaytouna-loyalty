@@ -6,6 +6,14 @@ export type ApiErrorBody = {
 
 const DEFAULT_ERROR_MESSAGE = "An unexpected signup error occurred.";
 
+export type SafeLoggedError = {
+  type: string;
+  name: string | null;
+  message: string | null;
+  code: string | null;
+  status: number | null;
+};
+
 function cleanMessage(value: unknown) {
   if (typeof value !== "string") {
     return null;
@@ -51,6 +59,37 @@ async function getResponseMessage(response: Response) {
   }
 }
 
+export function getSafeLoggedError(error: unknown): SafeLoggedError {
+  if (error instanceof Error) {
+    return {
+      type: "error",
+      name: cleanMessage(error.name),
+      message: cleanMessage(error.message),
+      code: null,
+      status: null,
+    };
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const record = error as Record<string, unknown>;
+    return {
+      type: error.constructor?.name ?? "object",
+      name: cleanMessage(record.name),
+      message: cleanMessage(record.message),
+      code: cleanMessage(record.code),
+      status: typeof record.status === "number" ? record.status : null,
+    };
+  }
+
+  return {
+    type: typeof error,
+    name: null,
+    message: cleanMessage(error),
+    code: null,
+    status: null,
+  };
+}
+
 export async function getErrorMessage(
   error: unknown,
   fallback = DEFAULT_ERROR_MESSAGE,
@@ -78,7 +117,7 @@ export async function getErrorMessage(
 }
 
 export function logServerError(context: string, error: unknown) {
-  console.error(`[${context}]`, error);
+  console.error(`[${context}]`, getSafeLoggedError(error));
 }
 
 export async function jsonError(

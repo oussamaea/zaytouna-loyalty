@@ -39,7 +39,9 @@ export function StaffCustomerDetails({
           ? "redeem the 10% reward"
           : "redeem the 50% reward and reset the cycle";
 
-    if (!window.confirm(`Confirm: ${label} for ${customer.profile.first_name}?`)) {
+    if (
+      !window.confirm(`Confirm: ${label} for ${customer.profile.first_name}?`)
+    ) {
       return;
     }
 

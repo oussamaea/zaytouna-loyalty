@@ -97,7 +97,9 @@ function createAdmin(options: {
 async function callLookup(query: string) {
   const { GET } = await import("@/app/api/staff/lookup/route");
 
-  return GET(new Request(`https://loyalty.example.com/api/staff/lookup${query}`));
+  return GET(
+    new Request(`https://loyalty.example.com/api/staff/lookup${query}`),
+  );
 }
 
 describe("staff lookup route", () => {
@@ -221,7 +223,10 @@ describe("staff lookup route", () => {
 
   it("returns 401 when authentication is required", async () => {
     mockGetStaffContext.mockResolvedValue({
-      error: Response.json({ error: "Authentication required." }, { status: 401 }),
+      error: Response.json(
+        { error: "Authentication required." },
+        { status: 401 },
+      ),
     });
 
     const response = await callLookup("?memberCode=ZB-EDCF6B");
@@ -232,7 +237,7 @@ describe("staff lookup route", () => {
     });
   });
 
-  it("returns development details for profile query failures", async () => {
+  it("returns a safe error for profile query failures", async () => {
     const { admin } = createAdmin({
       profileError: {
         message: "column profiles.loyalty_member_code does not exist",
@@ -252,21 +257,10 @@ describe("staff lookup route", () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
       error: "Unexpected lookup failure",
-      debug: {
-        step: "profile query",
-        normalizedMemberCode: "ZB-EDCF6B",
-        supabaseError: {
-          message: "column profiles.loyalty_member_code does not exist",
-          code: "42703",
-          details: "Missing column",
-          hint: "Check the select/query",
-          status: 400,
-        },
-      },
     });
   });
 
-  it("returns development details for loyalty account query failures", async () => {
+  it("returns a safe error for loyalty account query failures", async () => {
     const { admin } = createAdmin({
       accountError: {
         message: "permission denied for table loyalty_accounts",
@@ -284,23 +278,12 @@ describe("staff lookup route", () => {
     const response = await callLookup("?memberCode=ZB-EDCF6B");
 
     expect(response.status).toBe(500);
-    await expect(response.json()).resolves.toMatchObject({
+    await expect(response.json()).resolves.toEqual({
       error: "Unexpected lookup failure",
-      debug: {
-        step: "loyalty account query",
-        normalizedMemberCode: "ZB-EDCF6B",
-        supabaseError: {
-          message: "permission denied for table loyalty_accounts",
-          code: "42501",
-          details: "RLS denied access",
-          hint: "Check service role configuration",
-          status: 403,
-        },
-      },
     });
   });
 
-  it("returns development details for QR token query failures", async () => {
+  it("returns a safe error for QR token query failures", async () => {
     const { admin } = createAdmin({
       qrError: {
         message: "permission denied for table qr_tokens",
@@ -320,20 +303,10 @@ describe("staff lookup route", () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
       error: "Unexpected lookup failure",
-      debug: {
-        step: "qr token query",
-        supabaseError: {
-          message: "permission denied for table qr_tokens",
-          code: "42501",
-          details: "RLS denied access",
-          hint: "Check service role configuration",
-          status: 403,
-        },
-      },
     });
   });
 
-  it("returns development details for QR profile query failures", async () => {
+  it("returns a safe error for QR profile query failures", async () => {
     const { admin } = createAdmin({
       qrData: {
         customer_id: profile.id,
@@ -359,20 +332,10 @@ describe("staff lookup route", () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
       error: "Unexpected lookup failure",
-      debug: {
-        step: "qr profile query",
-        supabaseError: {
-          message: "permission denied for table profiles",
-          code: "42501",
-          details: "RLS denied access",
-          hint: "Check service role configuration",
-          status: 403,
-        },
-      },
     });
   });
 
-  it("returns development details for response mapping failures", async () => {
+  it("returns a safe error for response mapping failures", async () => {
     const { admin } = createAdmin({
       accountData: {
         customer_id: profile.id,
@@ -390,16 +353,12 @@ describe("staff lookup route", () => {
     const response = await callLookup("?memberCode=ZB-EDCF6B");
 
     expect(response.status).toBe(500);
-    await expect(response.json()).resolves.toMatchObject({
+    await expect(response.json()).resolves.toEqual({
       error: "Unexpected lookup failure",
-      debug: {
-        step: "response mapping",
-        normalizedMemberCode: "ZB-EDCF6B",
-      },
     });
   });
 
-  it("returns development details for unexpected lookup exceptions", async () => {
+  it("returns a safe error for unexpected lookup exceptions", async () => {
     mockGetStaffContext.mockResolvedValue({
       staff: { id: "staff-1", role: "staff" },
       admin: {
@@ -412,13 +371,8 @@ describe("staff lookup route", () => {
     const response = await callLookup("?memberCode=ZB-EDCF6B");
 
     expect(response.status).toBe(500);
-    await expect(response.json()).resolves.toMatchObject({
+    await expect(response.json()).resolves.toEqual({
       error: "Unexpected lookup failure",
-      debug: {
-        step: "unexpected exception",
-        normalizedMemberCode: "ZB-EDCF6B",
-        message: "Supabase client exploded",
-      },
     });
   });
 

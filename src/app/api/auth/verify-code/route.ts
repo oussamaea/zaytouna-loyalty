@@ -18,7 +18,10 @@ type CookieToSet = {
 
 const schema = z.object({
   email: z.email(),
-  token: z.string().trim().regex(/^\d{8}$/),
+  token: z
+    .string()
+    .trim()
+    .regex(/^\d{8}$/),
   next: z.string().default("/card"),
 });
 
@@ -79,13 +82,6 @@ export async function POST(request: NextRequest) {
       email: parsed.data.email,
       token: parsed.data.token,
       type: "email",
-    });
-
-    console.log("Email OTP verification", {
-      verified: !error,
-      hasUser: Boolean(data?.user ?? data?.session?.user),
-      cookieNames: cookiesToSet.map((cookie) => cookie.name),
-      destination: safeNext,
     });
 
     if (error) {

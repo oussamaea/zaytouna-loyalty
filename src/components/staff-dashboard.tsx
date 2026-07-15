@@ -58,7 +58,9 @@ export function StaffDashboard() {
           await scanner.stop();
           setScanning(false);
           const params = new URLSearchParams({ qrPayload: decodedText });
-          const response = await fetch(`/api/staff/lookup?${params.toString()}`);
+          const response = await fetch(
+            `/api/staff/lookup?${params.toString()}`,
+          );
           const data = (await response.json()) as {
             customer?: StaffLookupCustomer;
             error?: string;

@@ -26,7 +26,10 @@ and replace the body with a code-focused template:
 <p style="font-size: 28px; font-weight: 700; letter-spacing: 0.25em;">
   {{ .Token }}
 </p>
-<p>This code expires shortly. If you did not request it, you can ignore this email.</p>
+<p>
+  This code expires shortly. If you did not request it, you can ignore this
+  email.
+</p>
 ```
 
 The required Supabase variable is:

@@ -23,6 +23,12 @@ const lookupRoute = readFileSync(
   join(root, "src/app/api/staff/lookup/route.ts"),
   "utf8",
 );
+const serviceRoleLookupTables = [
+  "profiles",
+  "loyalty_accounts",
+  "loyalty_transactions",
+  "qr_tokens",
+];
 
 function extractMigrationBlock(start: string, end: string) {
   return migration.slice(migration.indexOf(start), migration.indexOf(end));
@@ -122,19 +128,23 @@ describe("qr token and idempotency protections", () => {
       'create policy "customers and staff can read wallet passes"',
     );
 
-    expect(migration).toContain("grant select on public.qr_tokens to authenticated");
+    expect(migration).toContain(
+      "grant select on public.qr_tokens to authenticated",
+    );
     expect(qrSelectPolicy).toContain("on public.qr_tokens for select");
     expect(qrSelectPolicy).toContain("to authenticated");
-    expect(qrSelectPolicy).toContain(
-      "public.current_user_is_staff_or_admin()",
-    );
+    expect(qrSelectPolicy).toContain("public.current_user_is_staff_or_admin()");
     expect(migration).toContain("role in ('staff', 'admin')");
   });
 
-  it("grants service_role select access for server-side qr lookup", () => {
-    expect(migration).toContain(
-      "grant select on public.qr_tokens to service_role",
-    );
+  it("grants service_role the exact selects required for server-side loyalty reads", () => {
+    expect(migration).toContain("grant usage on schema public to service_role");
+
+    for (const table of serviceRoleLookupTables) {
+      expect(migration).toContain(
+        `grant select on public.${table} to service_role`,
+      );
+    }
   });
 
   it("prevents customers and anonymous users from selecting qr tokens", () => {
@@ -156,6 +166,23 @@ describe("qr token and idempotency protections", () => {
     expect(qrSelectPolicy).not.toContain("id = auth.uid()");
   });
 
+  it("does not grant public or anonymous selects on service-role lookup tables", () => {
+    for (const table of serviceRoleLookupTables) {
+      expect(migration).not.toMatch(
+        new RegExp(
+          `grant\\s+select\\s+on\\s+public\\.${table}\\s+to\\s+anon`,
+          "i",
+        ),
+      );
+      expect(migration).not.toMatch(
+        new RegExp(
+          `grant\\s+select\\s+on\\s+public\\.${table}\\s+to\\s+public`,
+          "i",
+        ),
+      );
+    }
+  });
+
   it("stores only hashed qr tokens and claims them with row locking", () => {
     expect(migration).toContain("token_hash text not null unique");
     expect(migration).toContain("for update");
@@ -173,7 +200,9 @@ describe("qr token and idempotency protections", () => {
     expect(addStampFunction).toContain("where token_hash = p_qr_token_hash");
     expect(addStampFunction).toContain("for update");
     expect(addStampFunction).toContain("set used_at = now()");
-    expect(addStampFunction).toContain("where id = v_qr_token_id and used_at is null");
+    expect(addStampFunction).toContain(
+      "where id = v_qr_token_id and used_at is null",
+    );
     expect(addStampFunction).toContain(
       "QR token is invalid, expired, or already used.",
     );
@@ -193,10 +222,13 @@ describe("qr token and idempotency protections", () => {
       "create or replace function public.add_stamp",
       "create or replace function public.redeem_fifth_reward",
     );
-    const consumeMatches = addStampFunction.match(/set used_at = now\(\)/g) ?? [];
+    const consumeMatches =
+      addStampFunction.match(/set used_at = now\(\)/g) ?? [];
 
     expect(consumeMatches).toHaveLength(1);
-    expect(addStampFunction).toContain("where id = v_qr_token_id and used_at is null");
+    expect(addStampFunction).toContain(
+      "where id = v_qr_token_id and used_at is null",
+    );
     expect(addStampFunction).toContain("if not found then");
     expect(addStampFunction).toContain(
       "QR token is invalid, expired, or already used.",

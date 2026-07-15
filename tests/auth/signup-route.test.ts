@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockCreateSupabaseServerClient, mockSignInWithOtp } = vi.hoisted(() => ({
-  mockCreateSupabaseServerClient: vi.fn(),
-  mockSignInWithOtp: vi.fn(),
-}));
+const { mockCreateSupabaseServerClient, mockSignInWithOtp } = vi.hoisted(
+  () => ({
+    mockCreateSupabaseServerClient: vi.fn(),
+    mockSignInWithOtp: vi.fn(),
+  }),
+);
 
 vi.mock("@/lib/env", () => ({
   hasSupabasePublicEnv: () => true,

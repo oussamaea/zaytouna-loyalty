@@ -44,7 +44,10 @@ describe("AuthForm join mode", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>
-        Response.json({ error: { message: "Do not expose me as JSON" } }, { status: 500 }),
+        Response.json(
+          { error: { message: "Do not expose me as JSON" } },
+          { status: 500 },
+        ),
       ),
     );
 
@@ -58,7 +61,10 @@ describe("AuthForm join mode", () => {
   });
 
   it("displays the code instruction after successful signup", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ ok: true })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ ok: true })),
+    );
 
     const { container } = render(<AuthForm mode="join" />);
     fillJoinForm(container);
@@ -67,7 +73,9 @@ describe("AuthForm join mode", () => {
     expect(
       await screen.findByText("Check your email for an 8-digit code."),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Verify code" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Verify code" }),
+    ).toBeInTheDocument();
   });
 
   it("displays invalid and expired code messages from verification", async () => {
@@ -126,14 +134,19 @@ describe("AuthForm join mode", () => {
     fireEvent.submit(container.querySelector("form")!);
 
     await screen.findByRole("alert");
-    expect(JSON.parse(fetchMock.mock.calls[1]?.[1]?.body as string)).toMatchObject({
+    expect(
+      JSON.parse(fetchMock.mock.calls[1]?.[1]?.body as string),
+    ).toMatchObject({
       token: "12345678",
     });
   });
 
   it("keeps resend-code disabled during the cooldown", async () => {
     vi.useFakeTimers();
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ ok: true })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json({ ok: true })),
+    );
 
     const { container } = render(<AuthForm mode="login" />);
     fireEvent.change(screen.getByLabelText(/^email$/i), {

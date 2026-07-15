@@ -72,7 +72,10 @@ describe("email OTP verification route", () => {
     vi.spyOn(console, "log").mockImplementation(() => undefined);
     mockSupabase(
       {
-        data: { user: { id: "customer-1" }, session: { user: { id: "customer-1" } } },
+        data: {
+          user: { id: "customer-1" },
+          session: { user: { id: "customer-1" } },
+        },
         error: null,
       },
       {

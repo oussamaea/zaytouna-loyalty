@@ -78,7 +78,10 @@ Use a code-only email template for passwordless authentication:
 <p style="font-size: 28px; font-weight: 700; letter-spacing: 0.25em;">
   {{ .Token }}
 </p>
-<p>This code expires shortly. If you did not request it, you can ignore this email.</p>
+<p>
+  This code expires shortly. If you did not request it, you can ignore this
+  email.
+</p>
 ```
 
 Do not include clickable magic links, `{{ .ConfirmationURL }}`, or

@@ -331,12 +331,16 @@ revoke all on table public.loyalty_transactions from anon, authenticated;
 revoke all on table public.qr_tokens from anon, authenticated;
 revoke all on table public.wallet_passes from anon, authenticated;
 
+grant usage on schema public to service_role;
 grant select on public.profiles to authenticated;
 grant select on public.loyalty_accounts to authenticated;
 grant select on public.loyalty_transactions to authenticated;
 grant select on public.wallet_passes to authenticated;
 grant insert (customer_id, token_hash, expires_at) on public.qr_tokens to authenticated;
 grant select on public.qr_tokens to authenticated;
+grant select on public.profiles to service_role;
+grant select on public.loyalty_accounts to service_role;
+grant select on public.loyalty_transactions to service_role;
 grant select on public.qr_tokens to service_role;
 
 create policy "customers and staff can read profiles"

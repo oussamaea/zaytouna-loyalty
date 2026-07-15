@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { getErrorMessage } from "@/lib/api-error";
+import { describe, expect, it, vi } from "vitest";
+import { getErrorMessage, logServerError } from "@/lib/api-error";
 
 describe("getErrorMessage", () => {
   it("returns Error messages", async () => {
@@ -31,17 +31,19 @@ describe("getErrorMessage", () => {
 
   it("extracts error_description", async () => {
     await expect(
-      getErrorMessage({ error_description: "Magic link redirects are invalid" }),
+      getErrorMessage({
+        error_description: "Magic link redirects are invalid",
+      }),
     ).resolves.toBe("Magic link redirects are invalid");
   });
 
   it("extracts details and hint", async () => {
-    await expect(getErrorMessage({ details: "Detailed failure" })).resolves.toBe(
-      "Detailed failure",
-    );
-    await expect(getErrorMessage({ hint: "Check the auth redirect URL" })).resolves.toBe(
-      "Check the auth redirect URL",
-    );
+    await expect(
+      getErrorMessage({ details: "Detailed failure" }),
+    ).resolves.toBe("Detailed failure");
+    await expect(
+      getErrorMessage({ hint: "Check the auth redirect URL" }),
+    ).resolves.toBe("Check the auth redirect URL");
   });
 
   it("reads Response JSON error bodies", async () => {
@@ -84,8 +86,32 @@ describe("getErrorMessage", () => {
   it("keeps the older Supabase object message behavior", async () => {
     await expect(
       getErrorMessage({ message: "Email rate limit exceeded" }),
-    ).resolves.toBe(
-      "Email rate limit exceeded",
-    );
+    ).resolves.toBe("Email rate limit exceeded");
+  });
+
+  it("logs only sanitized server error fields", () => {
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    logServerError("safe test", {
+      message: "Permission denied",
+      code: "42501",
+      status: 403,
+      access_token: "secret-token",
+      email: "customer@example.com",
+    });
+
+    expect(errorSpy).toHaveBeenCalledWith("[safe test]", {
+      type: "Object",
+      name: null,
+      message: "Permission denied",
+      code: "42501",
+      status: 403,
+    });
+    expect(errorSpy.mock.calls[0]?.[1]).not.toHaveProperty("access_token");
+    expect(errorSpy.mock.calls[0]?.[1]).not.toHaveProperty("email");
+
+    errorSpy.mockRestore();
   });
 });

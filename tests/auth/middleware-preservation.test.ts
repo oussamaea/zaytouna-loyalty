@@ -16,8 +16,8 @@ describe("auth middleware/proxy", () => {
       "src/proxy.js",
     ];
 
-    expect(possibleFiles.filter((file) => existsSync(join(root, file)))).toEqual(
-      [],
-    );
+    expect(
+      possibleFiles.filter((file) => existsSync(join(root, file))),
+    ).toEqual([]);
   });
 });

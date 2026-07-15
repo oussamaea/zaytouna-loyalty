@@ -49,12 +49,8 @@ describe("StaffCustomerDetails", () => {
     expect(
       screen.getByRole("button", { name: /add one stamp/i }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /redeem 10%/i }),
-    ).toBeEnabled();
-    expect(
-      screen.getByRole("button", { name: /redeem 50%/i }),
-    ).toBeEnabled();
+    expect(screen.getByRole("button", { name: /redeem 10%/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /redeem 50%/i })).toBeEnabled();
     expect(screen.getByText("stamp_added")).toBeInTheDocument();
   });
 });

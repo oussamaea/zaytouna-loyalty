@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logServerError } from "@/lib/api-error";
 import { hashQrToken, parseQrPayload } from "@/lib/qr";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getStaffContext } from "@/lib/staff";
@@ -36,59 +37,8 @@ function toLookupCustomer(
   };
 }
 
-function logLookupDiagnostic(details: {
-  staffUserId: string;
-  normalizedMemberCode?: string | null;
-  profileFound: boolean;
-  loyaltyAccountFound: boolean;
-  source: "member-code" | "qr";
-}) {
-  console.log("Staff customer lookup", details);
-}
-
-function getSafeSupabaseError(error: unknown) {
-  if (typeof error !== "object" || error === null) {
-    return null;
-  }
-
-  const record = error as Record<string, unknown>;
-  return {
-    message: typeof record.message === "string" ? record.message : null,
-    code: typeof record.code === "string" ? record.code : null,
-    details: typeof record.details === "string" ? record.details : null,
-    hint: typeof record.hint === "string" ? record.hint : null,
-    status: typeof record.status === "number" ? record.status : null,
-  };
-}
-
-function logLookupStep(
-  step: string,
-  details: Record<string, unknown>,
-) {
-  console.log("Staff lookup diagnostic", {
-    step,
-    ...details,
-  });
-}
-
-function unexpectedLookupFailure(
-  step: string,
-  details: Record<string, unknown> = {},
-) {
-  if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: GENERIC_LOOKUP_ERROR }, { status: 500 });
-  }
-
-  return NextResponse.json(
-    {
-      error: GENERIC_LOOKUP_ERROR,
-      debug: {
-        step,
-        ...details,
-      },
-    },
-    { status: 500 },
-  );
+function unexpectedLookupFailure() {
+  return NextResponse.json({ error: GENERIC_LOOKUP_ERROR }, { status: 500 });
 }
 
 function assertMappableLookupRows(
@@ -133,11 +83,6 @@ export async function GET(request: Request): Promise<Response> {
 
   try {
     if (normalizedMemberCode) {
-      logLookupStep("normalized member code", {
-        staffUserId: context.staff.id,
-        normalizedMemberCode,
-      });
-
       if (!MEMBER_CODE_PATTERN.test(normalizedMemberCode)) {
         return NextResponse.json(
           { error: "Invalid member code." },
@@ -152,31 +97,11 @@ export async function GET(request: Request): Promise<Response> {
         .eq("role", "customer")
         .maybeSingle<LookupProfile>();
 
-      logLookupStep("profile query completed", {
-        staffUserId: context.staff.id,
-        normalizedMemberCode,
-        profileFound: Boolean(data),
-        error: getSafeSupabaseError(error),
-      });
-
       if (error) {
-        console.error("Staff customer lookup failed", {
-          staffUserId: context.staff.id,
-          normalizedMemberCode,
-          source: "member-code",
-          error: getSafeSupabaseError(error),
-        });
-        return unexpectedLookupFailure("profile query", {
-          normalizedMemberCode,
-          supabaseError: getSafeSupabaseError(error),
-        });
+        logServerError("staff lookup profile query", error);
+        return unexpectedLookupFailure();
       }
 
-      logLookupStep("profile row resolved", {
-        staffUserId: context.staff.id,
-        normalizedMemberCode,
-        profileFound: Boolean(data),
-      });
       profile = data ?? null;
     } else if (qrPayload) {
       source = "qr";
@@ -194,31 +119,15 @@ export async function GET(request: Request): Promise<Response> {
           revoked_at: string | null;
         }>();
 
-      logLookupStep("qr token query completed", {
-        staffUserId: context.staff.id,
-        qrTokenFound: Boolean(data),
-        error: getSafeSupabaseError(error),
-      });
-
       if (error) {
-        console.error("Staff QR lookup failed", {
-          staffUserId: context.staff.id,
-          source: "qr",
-          error: getSafeSupabaseError(error),
-        });
-        return unexpectedLookupFailure("qr token query", {
-          supabaseError: getSafeSupabaseError(error),
-        });
+        logServerError("staff qr lookup query", error);
+        return unexpectedLookupFailure();
       }
 
-      if (data?.expires_at && new Date(data.expires_at).getTime() <= Date.now()) {
-        logLookupDiagnostic({
-          staffUserId: context.staff.id,
-          normalizedMemberCode: null,
-          profileFound: false,
-          loyaltyAccountFound: false,
-          source,
-        });
+      if (
+        data?.expires_at &&
+        new Date(data.expires_at).getTime() <= Date.now()
+      ) {
         return NextResponse.json(
           { error: "QR code expired. Ask the customer to refresh their card." },
           { status: 404 },
@@ -233,31 +142,11 @@ export async function GET(request: Request): Promise<Response> {
           .eq("role", "customer")
           .maybeSingle<LookupProfile>();
 
-        logLookupStep("profile query completed", {
-          staffUserId: context.staff.id,
-          normalizedMemberCode: null,
-          profileFound: Boolean(qrProfile),
-          error: getSafeSupabaseError(profileError),
-          source,
-        });
-
         if (profileError) {
-          console.error("Staff QR profile lookup failed", {
-            staffUserId: context.staff.id,
-            source: "qr",
-            error: getSafeSupabaseError(profileError),
-          });
-          return unexpectedLookupFailure("qr profile query", {
-            supabaseError: getSafeSupabaseError(profileError),
-          });
+          logServerError("staff qr profile query", profileError);
+          return unexpectedLookupFailure();
         }
 
-        logLookupStep("profile row resolved", {
-          staffUserId: context.staff.id,
-          normalizedMemberCode: null,
-          profileFound: Boolean(qrProfile),
-          source,
-        });
         profile = qrProfile ?? null;
       }
     } else {
@@ -268,13 +157,6 @@ export async function GET(request: Request): Promise<Response> {
     }
 
     if (!profile) {
-      logLookupDiagnostic({
-        staffUserId: context.staff.id,
-        normalizedMemberCode,
-        profileFound: false,
-        loyaltyAccountFound: false,
-        source,
-      });
       return NextResponse.json(
         { error: "Customer not found." },
         { status: 404 },
@@ -289,35 +171,10 @@ export async function GET(request: Request): Promise<Response> {
       .eq("customer_id", profile.id)
       .maybeSingle<LookupAccount>();
 
-    logLookupStep("loyalty account query completed", {
-      staffUserId: context.staff.id,
-      normalizedMemberCode,
-      profileFound: true,
-      loyaltyAccountFound: Boolean(account),
-      error: getSafeSupabaseError(accountError),
-      source,
-    });
-
     if (accountError) {
-      console.error("Staff customer account lookup failed", {
-        staffUserId: context.staff.id,
-        normalizedMemberCode,
-        source,
-        error: getSafeSupabaseError(accountError),
-      });
-      return unexpectedLookupFailure("loyalty account query", {
-        normalizedMemberCode,
-        supabaseError: getSafeSupabaseError(accountError),
-      });
+      logServerError("staff lookup account query", accountError);
+      return unexpectedLookupFailure();
     }
-
-    logLookupDiagnostic({
-      staffUserId: context.staff.id,
-      normalizedMemberCode,
-      profileFound: true,
-      loyaltyAccountFound: Boolean(account),
-      source,
-    });
 
     if (!account) {
       return NextResponse.json(
@@ -329,37 +186,15 @@ export async function GET(request: Request): Promise<Response> {
     try {
       assertMappableLookupRows(profile, account);
     } catch (error) {
-      console.error("Staff lookup response mapping failed", {
-        staffUserId: context.staff.id,
-        normalizedMemberCode,
-        source,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-      return unexpectedLookupFailure("response mapping", {
-        normalizedMemberCode,
-        message: error instanceof Error ? error.message : "Unknown error",
-      });
+      logServerError("staff lookup response mapping", error);
+      return unexpectedLookupFailure();
     }
-
-    logLookupStep("response mapping completed", {
-      staffUserId: context.staff.id,
-      normalizedMemberCode,
-      source,
-    });
 
     return NextResponse.json({
       customer: toLookupCustomer(profile, account),
     });
   } catch (error) {
-    console.error("Unexpected staff lookup failure", {
-      staffUserId: context.staff.id,
-      normalizedMemberCode,
-      source,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-    return unexpectedLookupFailure("unexpected exception", {
-      normalizedMemberCode,
-      message: error instanceof Error ? error.message : "Unknown error",
-    });
+    logServerError(`staff lookup ${source}`, error);
+    return unexpectedLookupFailure();
   }
 }

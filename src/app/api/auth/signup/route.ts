@@ -12,35 +12,11 @@ const schema = z.object({
   acceptedTerms: z.literal(true),
 });
 
-function getDiagnosticField(error: unknown, key: string) {
-  if (typeof error === "object" && error !== null && key in error) {
-    return (error as Record<string, unknown>)[key];
-  }
-
-  return null;
-}
-
-function logSignupDiagnostic(error: unknown) {
-  console.error("Signup diagnostic", {
-    type: typeof error,
-    constructor:
-      error && typeof error === "object" ? error.constructor?.name : null,
-    keys: error && typeof error === "object" ? Object.keys(error) : [],
-    name: getDiagnosticField(error, "name"),
-    message: getDiagnosticField(error, "message"),
-    code: getDiagnosticField(error, "code"),
-    status: getDiagnosticField(error, "status"),
-  });
-}
-
 export async function POST(request: Request) {
   try {
     const configError = getSupabasePublicConfigError();
     if (configError) {
-      return NextResponse.json(
-        { error: configError },
-        { status: 503 },
-      );
+      return NextResponse.json({ error: configError }, { status: 503 });
     }
 
     const parsed = schema.safeParse(await request.json());
@@ -52,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signInWithOtp({
       email: parsed.data.email,
       options: {
         shouldCreateUser: true,
@@ -65,17 +41,7 @@ export async function POST(request: Request) {
       },
     });
 
-    console.error("Supabase signup result", {
-      hasData: Boolean(data),
-      hasError: Boolean(error),
-      errorName: error?.name,
-      errorMessage: error?.message,
-      errorStatus: error?.status,
-      errorCode: getDiagnosticField(error, "code"),
-    });
-
     if (error) {
-      logSignupDiagnostic(error);
       return NextResponse.json(
         { error: await getErrorMessage(error) },
         { status: await getAuthErrorStatus(error) },
@@ -84,7 +50,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    logSignupDiagnostic(error);
     return NextResponse.json(
       { error: await getErrorMessage(error) },
       { status: 500 },

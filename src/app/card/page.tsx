@@ -28,11 +28,6 @@ export default async function CardPage() {
     error,
   } = await supabase.auth.getUser();
 
-  console.log("Card auth", {
-    hasUser: Boolean(user),
-    userId: user?.id ?? null,
-  });
-
   if (error || !user) {
     redirect("/login?next=/card");
   }
